@@ -7,9 +7,7 @@ class Player:
         self.bet = 0
         self.gameOver = False
 
-    # gets and validates players bet
-    # will continue to ask until bet <= player’s total money
-    # subtract bet from player’s money
+    # gets and validates players bet, subtract bet from player’s money
     def placebet(self):
         done = False
         while not done:
@@ -29,16 +27,15 @@ class Player:
                     return
 
     # add players winnings, if any, to player’s money
-    # check if player has any money remaining, if none end game
     def payout(self, win):
         # player blackjack, pay 1.5 times bet
         if win == 'B':
-            print("You win!: " + str(1.5 * self.bet) + " credits")
+            print("You won: " + str(1.5 * self.bet) + " credits")
             self.money += (1.5 * self.bet)
 
         # player beat dealer, pay 1 times bet + bet
         elif win == 'W':
-            print("You win!: " + str(self.bet) + " credits")
+            print("You won: " + str(self.bet) + " credits")
             self.money += (self.bet)
 
         # player pushes, pay bet
@@ -54,7 +51,7 @@ class Player:
                 return
         self.playagain()
 
-    # check if player wants to continue playing or 
+    # check if player wants to continue playing or quit
     def playagain(self):
         while True:
             toContinue = input("Press enter to continue or enter q to quit the game: ")
@@ -72,6 +69,7 @@ class Player:
                     else:
                         print("Not a valid input.")
             elif toContinue == "":
+                print("\n")
                 return
             else:
                 print("Not a valid input.")
@@ -93,7 +91,6 @@ class Game:
         self.deck.getDeck()
 
     # deals hand to dealer and player
-    # prints both of players cards and just the first card of the dealer
     def dealHand(self):
         # deal 2 cards to each dealer and player, starting with the player
         self.playerHand.append(self.deck.getCard())
@@ -114,51 +111,36 @@ class Game:
 
         # if both dealer and player have blackjack, push
         if dealerBlackjack and playerBlackjack:
-            print("Push")
-            self.player.payout('P')
+            self.playerDealerBlackjack()
 
         # if only dealer has blackjack, player loses
         elif dealerBlackjack and not playerBlackjack:
-            print("\n\nBlackjack! Dealer wins!")
-            print("Dealer had: ", end = "")
-            self.printHand(self.dealerHand)
-            print("\n")
-            self.player.payout('L')
+            self.dealerBlackjack()
 
         # if only player has blackjack, player win
         elif not dealerBlackjack and playerBlackjack:
-            print("Blackjack! You win!")
-            print("Dealer had: ", end = "")
-            self.printHand(self.dealerHand)
-            print("\n")
-            self.player.payout('B')
+            self.playerBlackjack()
 
         # if no blackjacks, continue
         else:
             while not self.handDone:
                 move = input("\nHit or stand? Enter h for hit or s for stand: ")
+
                 if move == 's':
                     self.dealerTurn()
                     self.handDone = True
-                    print("Dealer's hand: ", end = "")
-                    self.printHand(self.dealerHand)
-                    print("\n")
                     if self.getTotal(self.dealerHand) > 21:
-                        print("Dealer bust! You win!")
-                        self.handDone = True
-                        self.resetHand()
-                        self.player.payout('W')
+                        self.dealerBust()
                         return
+
                 elif move == 'h':
                     self.hitCard(self.playerHand)
                     print("Your hand: ", end = "")
                     self.printHand(self.playerHand)
                     if self.getTotal(self.playerHand) > 21:
-                        self.handDone = True
-                        print("You bust! Dealer wins!")
-                        self.resetHand()
-                        self.player.payout('L')
+                        self.playerBust()
                         return
+
                 else:
                     print("Not a valid input, try again.")
             self.compareHands()
@@ -168,6 +150,44 @@ class Game:
     def printHand(self, hand):
         for card in hand:
             print(card + " ", end = "")
+
+    # dealer and player have blackjack, payout push
+    def playerDealerBlackjack(self):
+        print("Push! You and the dealer have blackjack!")
+        print("Dealer had: ", end = "")
+        self.printHand(self.dealerHand)
+        print("\n")
+        self.player.payout('P')
+
+    # dealer has blackjack, payout loss
+    def dealerBlackjack(self):
+        print("\n\nBlackjack! Dealer wins!")
+        print("Dealer had: ", end = "")
+        self.printHand(self.dealerHand)
+        print("\n")
+        self.player.payout('L')
+
+    # player has blackjack, payout blackjack
+    def playerBlackjack(self):
+        print("\nBlackjack! You win!")
+        print("Dealer had: ", end = "")
+        self.printHand(self.dealerHand)
+        print("\n")
+        self.player.payout('B')
+    
+    # dealer busts, payout player
+    def dealerBust(self):
+        print("Dealer bust! You win!")
+        self.handDone = True
+        self.resetHand()
+        self.player.payout('W')
+
+    # player busts
+    def playerBust(self):
+        self.handDone = True
+        print("\nYou bust! Dealer wins!")
+        self.resetHand()
+        self.player.payout('L')
 
     # checks if hand is blackjack 21
     def isBlackjack(self, hand):
@@ -206,9 +226,12 @@ class Game:
         time.sleep(1.5)
         while self.getTotal(self.dealerHand) < 17:
             self.hitCard(self.dealerHand)
+        print("Dealer's hand: ", end = "")
+        self.printHand(self.dealerHand)
+        print("\n")
+
 
     # compare dealer and player’s hands to determine winner
-    # this function only called if both dealer and player hands still in play
     # calls player function to payout
     def compareHands(self):
         dealerTotal = self.getTotal(self.dealerHand)
